@@ -32,5 +32,6 @@ public class OrderDTO {
     /** 支付状态, 默认为0未支付. */
     private Integer payStatus;
 
+    //一个订单中含有多个商品
     private List<OrderDetail> orderDetailList;
 }

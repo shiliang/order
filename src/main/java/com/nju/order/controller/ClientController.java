@@ -2,6 +2,7 @@ package com.nju.order.controller;
 
 import com.nju.order.Entity.ProductInfo;
 import com.nju.order.client.ProductClient;
+import com.nju.order.dto.CartDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
@@ -38,6 +39,12 @@ public class ClientController {
     public String getProductList() {
         List<ProductInfo> productInfoList = productClient.listForOrder(Arrays.asList("164103465734242707"));
         log.info("response={}", productInfoList);
+        return "ok";
+    }
+
+    @GetMapping("/productDecreaseStock")
+    public String productDecreaseStock() {
+        productClient.decreaseStock(Arrays.asList(new CartDTO("164103465734242707" , 3)));
         return "ok";
     }
 
