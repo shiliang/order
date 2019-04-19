@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: order
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        service-id: CONFIG
+    stream:
+      bindings:
+        myMessage:
+          group: order
+          content-type: application/json
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://47.106.174.156:8761/eureka/
