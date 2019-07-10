@@ -6,13 +6,15 @@ spring:
       discovery:
         enabled: true
         service-id: CONFIG
-    stream:
-      bindings:
-        myMessage:
-          group: order
-          content-type: application/json
 
 eureka:
   client:
     service-url:
       defaultZone: http://47.106.174.156:8761/eureka/
+
+rocketmq:
+  producer:
+    group: mygroup
+  name-server: 106.12.17.107:9876
+server:
+  port: 8877

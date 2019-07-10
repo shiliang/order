@@ -6,15 +6,14 @@ import com.nju.server.dto.OrderDTO;
 import com.nju.server.enums.ResultEnum;
 import com.nju.server.exception.OrderException;
 import com.nju.server.form.OrderForm;
+import com.nju.server.message.MqProvider;
 import com.nju.server.service.OrderService;
 import com.nju.server.utils.ResultVOUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.HashMap;
@@ -55,5 +54,12 @@ public class OrderController {
         map.put("orderId", result.getOrderId());
         return ResultVOUtil.success(map);
     }
+
+    @PostMapping("/finish")
+    public ResultVO<OrderDTO> finish(@RequestParam("orderId") String orderId) {
+        return ResultVOUtil.success(orderService.finish(orderId));
+    }
+
+
 
 }

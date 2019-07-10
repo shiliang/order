@@ -2,11 +2,13 @@ package com.nju.server.service.impl;
 
 import com.nju.server.Entity.OrderDetail;
 import com.nju.server.Entity.OrderMaster;
-import com.nju.server.Entity.ProductInfo;
-import com.nju.server.dto.CartDTO;
+import com.nju.server.domain.impl.OrderCreated;
 import com.nju.server.dto.OrderDTO;
 import com.nju.server.enums.OrderStatusEnum;
 import com.nju.server.enums.PayStatusEnum;
+import com.nju.server.enums.ResultEnum;
+import com.nju.server.exception.OrderException;
+import com.nju.server.message.MqProvider;
 import com.nju.server.repository.OrderDetailRepository;
 import com.nju.server.repository.OrderMasterRepository;
 import com.nju.server.service.OrderService;
@@ -16,10 +18,17 @@ import com.product.common.DecreaseStockInput;
 import com.product.common.ProductInfoOutput;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.GenericMessage;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,7 +43,11 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private ProductClient productClient;
 
+    @Autowired
+    private MqProvider mqProvider;
+
     @Override
+    @Transactional
     public OrderDTO create(OrderDTO orderDTO) {
         String orderId = KeyUtil.genUniqueKey();
 
@@ -70,10 +83,10 @@ public class OrderServiceImpl implements OrderService {
 
         //扣库存(调用商品服务)
         List<DecreaseStockInput> decreaseStockInputList = orderDTO.getOrderDetailList().stream()
-                .map(e -> new DecreaseStockInput(e.getProductId(), e.getProductQuantity()))
-                .collect(Collectors.toList());
-        productClient.decreaseStock(decreaseStockInputList);
+                .map(e -> new DecreaseStockInput(e.getProductId(), e.getProductQuantity()))  //映射成另外一个元素
+                .collect(Collectors.toList());  //转换数据结构
 
+        //productClient.decreaseStock(decreaseStockInputList);
         //订单入库
         OrderMaster orderMaster = new OrderMaster();
         orderDTO.setOrderId(orderId);
@@ -81,7 +94,42 @@ public class OrderServiceImpl implements OrderService {
         orderMaster.setOrderAmount(orderAmount);
         orderMaster.setOrderStatus(OrderStatusEnum.NEW.getCode());
         orderMaster.setPayStatus(PayStatusEnum.WAIT.getCode());
+
+        Message<OrderCreated> message = new GenericMessage<>(new OrderCreated(orderMaster, decreaseStockInputList));
+
+        //orderMasterRepository.save(orderMaster);
+        mqProvider.sendTransactionMessage(message);
+
+        return orderDTO;
+    }
+
+    @Override
+    @Transactional
+    public OrderDTO finish(String orderId) {
+        //1.先查询订单
+        Optional<OrderMaster> orderMasterOptional = orderMasterRepository.findById(orderId);
+        if (orderMasterOptional.isPresent()) {
+            throw new OrderException(ResultEnum.CART_EMPTY);
+        }
+        //2.判断订单状态
+        OrderMaster orderMaster = orderMasterOptional.get();
+        if (OrderStatusEnum.NEW.getCode() != orderMaster.getOrderStatus()) {
+            throw new OrderException(ResultEnum.ORDER_STATUS_ERROR);
+        }
+        //3.修改订单状态为完结
+        orderMaster.setOrderStatus(OrderStatusEnum.FINISHED.getCode());
         orderMasterRepository.save(orderMaster);
+
+        //查询订单详情
+        List<OrderDetail> orderDetailList = orderDetailRepository.findByOrderId(orderId);
+        if (CollectionUtils.isEmpty(orderDetailList)) {
+            throw new OrderException(ResultEnum.ORDER_DETAIL_NOT_EXIST);
+        }
+
+        OrderDTO orderDTO = new OrderDTO();
+        BeanUtils.copyProperties(orderMaster, orderDTO);
+        orderDTO.setOrderDetailList(orderDetailList);
+
         return orderDTO;
     }
 }
