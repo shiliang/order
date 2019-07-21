@@ -34,13 +34,11 @@ public class OrderController {
      * 5. 订单入库
      */
     @PostMapping("/create")
-    public ResultVO<Map<String, String>> create(@Valid OrderForm orderForm,
-                                                BindingResult bindingResult) {
-        if (bindingResult.hasErrors()){
-            log.error("【创建订单】参数不正确, orderForm={}", orderForm);
-            throw new OrderException(ResultEnum.PARAM_ERROR.getCode(),
-                    bindingResult.getFieldError().getDefaultMessage());
-        }
+    public ResultVO<Map<String, String>> create(@RequestBody OrderForm orderForm) {
+
+        /*
+            {"name": "张山", "phone":"123457","address":"上海","openid":"wedefref","items":"[{\"productId\":\"157875196366160022\",\"productQuantity\":2}]"}
+         */
         // orderForm -> orderDTO
         OrderDTO orderDTO = OrderForm2OrderDTOConverter.convert(orderForm);
         if (CollectionUtils.isEmpty(orderDTO.getOrderDetailList())) {
