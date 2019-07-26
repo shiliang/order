@@ -95,7 +95,7 @@ public class OrderServiceImpl implements OrderService {
         orderMaster.setOrderStatus(OrderStatusEnum.NEW.getCode());
         orderMaster.setPayStatus(PayStatusEnum.WAIT.getCode());
 
-        Message<OrderCreated> message = new GenericMessage<>(new OrderCreated(orderMaster, decreaseStockInputList));
+        GenericMessage<OrderCreated> message = new GenericMessage<>(new OrderCreated(orderMaster, decreaseStockInputList));
 
         //orderMasterRepository.save(orderMaster);
         mqProvider.sendTransactionMessage(message);

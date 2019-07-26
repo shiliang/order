@@ -20,7 +20,7 @@ public class MqProvider {
     }
 
     public boolean sendTransactionMessage(Message message) {
-        TransactionSendResult result = rocketMQTemplate.sendMessageInTransaction("txOrder","order", message, null);
+        TransactionSendResult result = rocketMQTemplate.sendMessageInTransaction("txOrder","order-trans", message, null);
         System.out.println("发送事务消息:" + message);
         return true;
     }
